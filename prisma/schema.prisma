@@ -1,0 +1,46 @@
+// prisma/schema.prisma
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+
+
+model Porteiro {
+  id        String   @id @default(uuid())
+  nome      String   @unique
+  acessos   Acesso[] // Relacionamento: Um porteiro faz vários acessos
+  criadoEm  DateTime @default(now())
+}
+
+model Motorista {
+  id        String   @id @default(uuid())
+  cpf       String   @unique
+  nome      String
+  empresa   String
+  acessos   Acesso[] // Relacionamento: Um motorista tem vários acessos
+  criadoEm  DateTime @default(now())
+}
+
+model Acesso {
+  id            String   @id @default(uuid())
+  dataEntrada   DateTime @default(now())
+  placa         String
+  setor         String
+  
+  // O arquivo PDF salvo em formato BLOB (Bytes)
+  arquivoPdf    Bytes    
+
+  // Relação com o Porteiro (Quem registrou)
+  porteiroId    String
+  porteiro      Porteiro  @relation(fields: [porteiroId], references: [id])
+
+  // Relação com o Motorista (Quem entrou)
+  motoristaId   String
+  motorista     Motorista @relation(fields: [motoristaId], references: [id])
+}
