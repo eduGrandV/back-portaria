@@ -5,7 +5,8 @@ export class AcessoController {
   async registrarEntrada(req: Request, res: Response) {
     try {
       const arquivoPdf = req.file;
-      const { nomePorteiro, nomeMotorista, cpf, empresa, placa, setor } = req.body;
+      
+      const { nomePorteiro, nomeMotorista, cpf, empresa, placa, setor, numeroCracha } = req.body;
 
       if (!arquivoPdf) {
         return res.status(400).json({ error: 'O arquivo PDF do termo é obrigatório.' });
@@ -15,14 +16,12 @@ export class AcessoController {
         return res.status(400).json({ error: 'Faltam dados obrigatórios do porteiro ou motorista.' });
       }
 
-      
       const porteiro = await prisma.porteiro.upsert({
         where: { nome: nomePorteiro },
         update: {}, 
         create: { nome: nomePorteiro }
       });
 
-      
       const motorista = await prisma.motorista.upsert({
         where: { cpf: cpf },
         update: { nome: nomeMotorista, empresa: empresa },
@@ -30,10 +29,14 @@ export class AcessoController {
       });
 
       
+      const statusCracha = numeroCracha ? false : null;
+
       const acesso = await prisma.acesso.create({
         data: {
           placa,
           setor,
+          numeroCracha: numeroCracha || null, 
+          crachaDevolvido: statusCracha,      
           arquivoPdf: arquivoPdf.buffer, 
           porteiroId: porteiro.id,
           motoristaId: motorista.id
@@ -55,13 +58,13 @@ export class AcessoController {
     try {
       const acessos = await prisma.acesso.findMany({
         orderBy: { dataEntrada: 'desc' }, 
-        take: 50, 
         select: {
-          
           id: true,
           dataEntrada: true,
           placa: true,
           setor: true,
+          numeroCracha: true,    
+          crachaDevolvido: true, 
           porteiro: { select: { nome: true } },
           motorista: { select: { nome: true, cpf: true, empresa: true } }
         }
@@ -75,15 +78,37 @@ export class AcessoController {
   }
 
   
- 
+  async atualizarStatusCracha(req: Request, res: Response) {
+    try {
+      const id = String(req.params.id);
+      const { devolvido } = req.body; 
+
+      if (typeof devolvido !== 'boolean') {
+        return res.status(400).json({ error: 'O status do crachá deve ser um booleano (true/false).' });
+      }
+
+      const acessoAtualizado = await prisma.acesso.update({
+        where: { id: id },
+        data: { crachaDevolvido: devolvido }
+      });
+
+      return res.json({ 
+        message: 'Status do crachá atualizado com sucesso!',
+        crachaDevolvido: acessoAtualizado.crachaDevolvido 
+      });
+
+    } catch (error) {
+      console.error("Erro ao atualizar status do crachá:", error);
+      return res.status(500).json({ error: 'Erro interno no servidor.' });
+    }
+  }
+
   async baixarPdf(req: Request, res: Response) {
     try {
-      
       const id = String(req.params.id);
 
       const acesso = await prisma.acesso.findUnique({
         where: { id: id },
-        
         include: { motorista: true }
       });
 
@@ -91,12 +116,9 @@ export class AcessoController {
         return res.status(404).json({ error: 'PDF não encontrado para este acesso.' });
       }
 
-      
       res.setHeader('Content-Type', 'application/pdf');
-      
       res.setHeader('Content-Disposition', `inline; filename="termo-${acesso.motorista.nome}.pdf"`);
 
-      
       return res.send(acesso.arquivoPdf);
 
     } catch (error) {
@@ -104,4 +126,5 @@ export class AcessoController {
       return res.status(500).json({ error: 'Erro interno no servidor.' });
     }
   }
+
 }

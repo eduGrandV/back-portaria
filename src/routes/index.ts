@@ -16,4 +16,7 @@ routes.get('/acessos', acessoController.listarAcessos);
 
 routes.get('/acessos/:id/pdf', acessoController.baixarPdf);
 
+// Usamos PATCH pois vamos alterar apenas UMA coluna do registro
+routes.patch('/acessos/:id/cracha', acessoController.atualizarStatusCracha);
+
 export { routes };

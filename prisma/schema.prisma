@@ -1,5 +1,3 @@
-// prisma/schema.prisma
-
 generator client {
   provider = "prisma-client-js"
 }
@@ -9,38 +7,35 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
 model Porteiro {
-  id        String   @id @default(uuid())
-  nome      String   @unique
-  acessos   Acesso[] // Relacionamento: Um porteiro faz vários acessos
-  criadoEm  DateTime @default(now())
+  id       String   @id @default(uuid())
+  nome     String   @unique
+  criadoEm DateTime @default(now())
+  acessos  Acesso[]
 }
 
 model Motorista {
-  id        String   @id @default(uuid())
-  cpf       String   @unique
-  nome      String
-  empresa   String
-  acessos   Acesso[] // Relacionamento: Um motorista tem vários acessos
-  criadoEm  DateTime @default(now())
+  id       String   @id @default(uuid())
+  cpf      String   @unique
+  nome     String
+  empresa  String
+  criadoEm DateTime @default(now())
+  acessos  Acesso[]
 }
 
 model Acesso {
-  id            String   @id @default(uuid())
-  dataEntrada   DateTime @default(now())
-  placa         String
-  setor         String
-  
-  // O arquivo PDF salvo em formato BLOB (Bytes)
-  arquivoPdf    Bytes    
+  id              String    @id @default(uuid())
+  dataEntrada     DateTime  @default(now())
+  placa           String
+  setor           String
+  arquivoPdf      Bytes
+  porteiroId      String
+  motoristaId     String
+  crachaDevolvido Boolean?
+  numeroCracha    String?
+  motorista       Motorista @relation(fields: [motoristaId], references: [id])
+  porteiro        Porteiro  @relation(fields: [porteiroId], references: [id])
 
-  // Relação com o Porteiro (Quem registrou)
-  porteiroId    String
-  porteiro      Porteiro  @relation(fields: [porteiroId], references: [id])
-
-  // Relação com o Motorista (Quem entrou)
-  motoristaId   String
-  motorista     Motorista @relation(fields: [motoristaId], references: [id])
+  @@index([motoristaId], map: "Acesso_motoristaId_fkey")
+  @@index([porteiroId], map: "Acesso_porteiroId_fkey")
 }

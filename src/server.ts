@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json()); 
 app.use(routes);
 
-const PORT = process.env.PORT || 3333;
+const PORT = process.env.PORT || 3009;
 
 app.listen(PORT, () => {
   console.log(`🚀 Servidor backend rodando na porta ${PORT}`);
